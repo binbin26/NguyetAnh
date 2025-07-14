@@ -1,1 +1,1003 @@
 
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Birthday Memories Album</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Dancing+Script&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --blush: #f2d5d5;
+            --dusty-rose: #d9adad;
+            --cream: #f8f3e6;
+            --sage: #c2cfc0;
+            --lavender: #d8d0e3;
+            --beige: #e8e0d5;
+        }
+        
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: var(--cream);
+            color: #5a5a5a;
+            overflow-x: hidden;
+        }
+        
+        .handwritten {
+            font-family: 'Dancing Script', cursive;
+        }
+        
+        .serif {
+            font-family: 'Playfair Display', serif;
+        }
+        
+        .album-page {
+            min-height: 100vh;
+            perspective: 1000px;
+            transition: all 0.5s ease;
+        }
+        
+        .page-content {
+            background-color: white;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            position: relative;
+            transition: transform 0.8s ease;
+        }
+        
+        .torn-edge {
+            position: absolute;
+            height: 100%;
+            width: 20px;
+            right: -10px;
+            top: 0;
+            background-image: url("data:image/svg+xml,%3Csvg width='20' height='100%25' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0,0 Q5,10 0,20 Q5,30 0,40 Q5,50 0,60 Q5,70 0,80 Q5,90 0,100 Q5,110 0,120 Q5,130 0,140 Q5,150 0,160 Q5,170 0,180 Q5,190 0,200' stroke='%23f8f3e6' fill='white' stroke-width='1'/%3E%3C/svg%3E");
+            z-index: 10;
+        }
+        
+        .photo-frame {
+            background-color: white;
+            padding: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transform: rotate(var(--rotate, 0deg));
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .photo-frame:hover {
+            transform: rotate(var(--rotate, 0deg)) scale(1.03);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+            z-index: 20;
+        }
+        
+        .washi-tape {
+            position: absolute;
+            width: 80px;
+            height: 20px;
+            background-color: var(--tape-color, var(--blush));
+            opacity: 0.7;
+            transform: rotate(var(--tape-rotate, 0deg));
+            z-index: 5;
+        }
+        
+        .polaroid {
+            padding: 15px 15px 40px 15px;
+        }
+        
+        .flower {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            z-index: 5;
+        }
+        
+        .page-turn-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: white;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+        
+        .navigation {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 50;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .nav-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--dusty-rose);
+            opacity: 0.5;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-dot.active {
+            opacity: 1;
+            transform: scale(1.3);
+        }
+        
+        .photo-placeholder {
+            background-color: var(--beige);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #8a8a8a;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .photo-placeholder::before {
+            content: '📷';
+            position: absolute;
+            font-size: 24px;
+            opacity: 0.3;
+        }
+        
+        .photo-placeholder span {
+            position: relative;
+            z-index: 2;
+            background-color: rgba(255, 255, 255, 0.7);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .circular-frame .photo-placeholder {
+            border-radius: 50%;
+            aspect-ratio: 1/1;
+        }
+        
+        .torn-photo .photo-placeholder::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 30px;
+            height: 30px;
+            background-color: var(--beige);
+            clip-path: polygon(100% 0, 0% 100%, 100% 100%);
+        }
+        
+        .nav-arrow {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 50;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .nav-arrow:hover {
+            background-color: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        }
+        
+        .nav-arrow.prev {
+            left: 20px;
+        }
+        
+        .nav-arrow.next {
+            right: 20px;
+        }
+        
+        .nav-arrow svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--dusty-rose);
+        }
+        
+        .page-indicator {
+            position: fixed;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 50;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            color: #5a5a5a;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 1s ease forwards;
+            opacity: 0;
+        }
+        
+        .delay-1 { animation-delay: 0.2s; }
+        .delay-2 { animation-delay: 0.4s; }
+        .delay-3 { animation-delay: 0.6s; }
+        .delay-4 { animation-delay: 0.8s; }
+        
+        .page-title {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .page-title::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: var(--dusty-rose);
+        }
+        
+        .sticker {
+            position: absolute;
+            font-size: 24px;
+            transform: rotate(var(--sticker-rotate, 0deg));
+            z-index: 5;
+        }
+        
+        .add-photo-hint {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .photo-placeholder:hover .add-photo-hint {
+            opacity: 1;
+        }
+        
+        .page-nav-text {
+            position: fixed;
+            bottom: 20px;
+            z-index: 50;
+            font-size: 14px;
+            color: var(--dusty-rose);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 8px 16px;
+            border-radius: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        .page-nav-text:hover {
+            background-color: white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        
+        .page-nav-text.prev {
+            left: 20px;
+        }
+        
+        .page-nav-text.next {
+            right: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="album" class="relative">
+        <!-- Cover Page -->
+        <section id="cover" class="album-page flex items-center justify-center">
+            <div class="page-content w-full max-w-4xl mx-auto p-10 rounded-lg bg-cover bg-center" 
+                 style="background-image: linear-gradient(rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.7)), url('data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'400\' height=\'400\' viewBox=\'0 0 800 800\'%3E%3Cg fill=\'none\' stroke=\'%23d8d0e3\' stroke-width=\'1\'%3E%3Cpath d=\'M769 229L1037 260.9M927 880L731 737 520 660 309 538 40 599 295 764 126.5 879.5 40 599-197 493 102 382-31 229 126.5 79.5-69-63\'/%3E%3Cpath d=\'M-31 229L237 261 390 382 603 493 308.5 537.5 101.5 381.5M370 905L295 764\'/%3E%3Cpath d=\'M520 660L578 842 731 737 840 599 603 493 520 660 295 764 309 538 390 382 539 269 769 229 577.5 41.5 370 105 295 -36 126.5 79.5 237 261 102 382 40 599 -69 737 127 880\'/%3E%3Cpath d=\'M520-140L578.5 42.5 731-63M603 493L539 269 237 261 370 105M902 382L539 269M390 382L102 382\'/%3E%3Cpath d=\'M-222 42L126.5 79.5 370 105 539 269 577.5 41.5 927 80 769 229 902 382 603 493 731 737M295-36L577.5 41.5M578 842L295 764M40-201L127 80M102 382L-261 269\'/%3E%3C/g%3E%3Cg fill=\'%23d9adad\'%3E%3Ccircle cx=\'769\' cy=\'229\' r=\'5\'/%3E%3Ccircle cx=\'539\' cy=\'269\' r=\'5\'/%3E%3Ccircle cx=\'603\' cy=\'493\' r=\'5\'/%3E%3Ccircle cx=\'731\' cy=\'737\' r=\'5\'/%3E%3Ccircle cx=\'520\' cy=\'660\' r=\'5\'/%3E%3Ccircle cx=\'309\' cy=\'538\' r=\'5\'/%3E%3Ccircle cx=\'295\' cy=\'764\' r=\'5\'/%3E%3Ccircle cx=\'40\' cy=\'599\' r=\'5\'/%3E%3Ccircle cx=\'102\' cy=\'382\' r=\'5\'/%3E%3Ccircle cx=\'127\' cy=\'80\' r=\'5\'/%3E%3Ccircle cx=\'370\' cy=\'105\' r=\'5\'/%3E%3Ccircle cx=\'578\' cy=\'42\' r=\'5\'/%3E%3Ccircle cx=\'237\' cy=\'261\' r=\'5\'/%3E%3Ccircle cx=\'390\' cy=\'382\' r=\'5\'/%3E%3C/g%3E%3C/svg%3E');">
+                
+                <div class="text-center">
+                    <div class="mb-6 fade-in">
+                        <svg class="mx-auto mb-4" width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M40 10C23.4315 10 10 23.4315 10 40C10 56.5685 23.4315 70 40 70C56.5685 70 70 56.5685 70 40C70 23.4315 56.5685 10 40 10Z" stroke="#d9adad" stroke-width="2"/>
+                            <path d="M40 15C26.1929 15 15 26.1929 15 40C15 53.8071 26.1929 65 40 65C53.8071 65 65 53.8071 65 40C65 26.1929 53.8071 15 40 15Z" stroke="#c2cfc0" stroke-width="1.5"/>
+                            <path d="M40 20C29.0543 20 20 29.0543 20 40C20 50.9457 29.0543 60 40 60C50.9457 60 60 50.9457 60 40C60 29.0543 50.9457 20 40 20Z" stroke="#d8d0e3" stroke-width="1"/>
+                            <path d="M40 25C31.7157 25 25 31.7157 25 40C25 48.2843 31.7157 55 40 55C48.2843 55 55 48.2843 55 40C55 31.7157 48.2843 25 40 25Z" fill="#f2d5d5" fill-opacity="0.3"/>
+                        </svg>
+                        <h1 class="serif text-4xl md:text-6xl text-gray-700 font-bold">A Journey Through Time</h1>
+                    </div>
+                    <p class="handwritten text-3xl md:text-4xl mb-8 text-gray-600 fade-in delay-1">Happy Birthday Nguyet Anh</p>
+                    <div class="max-w-lg mx-auto fade-in delay-2">
+                        <p class="serif italic text-lg md:text-xl mb-8">"The best gift one can give another is the memories we create together."</p>
+                        <p class="text-sm md:text-base">A collection of moments and memories to celebrate your special day</p>
+                    </div>
+                    <div class="mt-12 fade-in delay-3">
+                        <button id="start-button" class="px-8 py-3 bg-white border border-gray-300 rounded-md shadow-sm hover:shadow-md transition-all text-gray-700 serif">
+                            Open Album
+                        </button>
+                    </div>
+                    
+                    <!-- Cover Photo Placeholder -->
+                    <div class="mt-12 max-w-sm mx-auto fade-in delay-4">
+                        <div class="photo-frame polaroid" style="--rotate: -1deg;">
+                            <div class="washi-tape" style="--tape-color: var(--dusty-rose); --tape-rotate: -15deg; top: -10px; left: 20px;"></div>
+                            <div class="photo-placeholder aspect-[4/3] mb-2">
+                                <span>Cover Photo</span>
+                                <div class="add-photo-hint">Add your favorite photo here</div>
+                            </div>
+                            <p class="handwritten text-center text-lg">A special moment</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Childhood Page -->
+        <section id="childhood" class="album-page hidden flex items-center justify-center">
+            <div class="page-content w-full max-w-4xl mx-auto p-10 rounded-lg" style="background-color: var(--cream);">
+                <div class="torn-edge"></div>
+                
+                <div class="relative mb-8">
+                    <h2 class="page-title serif text-3xl font-bold text-gray-700">Childhood Days</h2>
+                    <div class="sticker" style="top: -15px; right: 40px; --sticker-rotate: -15deg;">✨</div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="relative">
+                        <div class="photo-frame polaroid" style="--rotate: -2deg;">
+                            <div class="washi-tape" style="--tape-color: var(--sage); --tape-rotate: -30deg; top: -10px; left: 20px;"></div>
+                            <div class="photo-placeholder aspect-[4/3] mb-2">
+                                <span>First Steps Photo</span>
+                                <div class="add-photo-hint">Add first steps photo here</div>
+                            </div>
+                            <p class="handwritten text-center text-lg">First steps at 11 months!</p>
+                        </div>
+                        <div class="flower" style="bottom: 20px; right: 10px;">
+                            <svg width="30" height="30" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M50 20C55 35 65 40 80 45C65 50 55 55 50 70C45 55 35 50 20 45C35 40 45 35 50 20Z" fill="#f2d5d5"/>
+                                <circle cx="50" cy="45" r="5" fill="#d9adad"/>
+                            </svg>
+                        </div>
+                    </div>
+                    
+                    <div class="relative">
+                        <div class="photo-frame polaroid" style="--rotate: 3deg;">
+                            <div class="washi-tape" style="--tape-color: var(--lavender); --tape-rotate: 20deg; top: -8px; right: 30px;"></div>
+                            <div class="photo-placeholder aspect-[4/3] mb-2">
+                                <span>Birthday Party Photo</span>
+                                <div class="add-photo-hint">Add birthday party photo here</div>
+                            </div>
+                            <p class="handwritten text-center text-lg">3rd birthday party!</p>
+                        </div>
+                    </div>
+                    
+                    <div class="relative circular-frame">
+                        <div class="photo-frame" style="--rotate: -1deg;">
+                            <div class="washi-tape" style="--tape-color: var(--blush); --tape-rotate: 15deg; top: -8px; left: 15px;"></div>
+                            <div class="photo-placeholder">
+                                <span>Baby Portrait</span>
+                                <div class="add-photo-hint">Add baby portrait here</div>
+                            </div>
+                        </div>
+                        <p class="handwritten text-center mt-2">Sweet baby face!</p>
+                    </div>
+                    
+                    <div class="relative torn-photo">
+                        <div class="photo-frame" style="--rotate: 2deg;">
+                            <div class="washi-tape" style="--tape-color: var(--beige); --tape-rotate: -10deg; top: -8px; right: 20px;"></div>
+                            <div class="photo-placeholder aspect-[3/4]">
+                                <span>Playtime Photo</span>
+                                <div class="add-photo-hint">Add playtime photo here</div>
+                            </div>
+                        </div>
+                        <p class="handwritten text-center mt-2">Always playing!</p>
+                    </div>
+                    
+                    <div class="md:col-span-2">
+                        <div class="bg-white p-6 rounded-lg border border-gray-100 shadow-sm">
+                            <p class="handwritten text-xl mb-3">Dear one,</p>
+                            <p class="text-gray-700">You were the sweetest child, always curious and full of laughter. Your eyes would light up at the smallest wonders, and your imagination knew no bounds. Those early years were filled with playground adventures, bedtime stories, and the purest kind of joy.</p>
+                            <div class="flex justify-end mt-4">
+                                <div class="w-8 h-8 rounded-full bg-[var(--blush)] flex items-center justify-center text-white">
+                                    ❤️
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- School Years Page -->
+        <section id="school" class="album-page hidden flex items-center justify-center">
+            <div class="page-content w-full max-w-4xl mx-auto p-10 rounded-lg" style="background-color: var(--blush);">
+                <div class="torn-edge"></div>
+                
+                <div class="relative mb-8">
+                    <h2 class="page-title serif text-3xl font-bold text-gray-700">School Years</h2>
+                    <div class="sticker" style="top: -10px; right: 80px; --sticker-rotate: 10deg;">📚</div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="relative">
+                        <div class="photo-frame" style="--rotate: -1deg;">
+                            <div class="washi-tape" style="--tape-color: var(--beige); --tape-rotate: -20deg; top: -10px; left: 10px;"></div>
+                            <div class="photo-placeholder aspect-[3/4] mb-2">
+                                <span>First Day of School</span>
+                                <div class="add-photo-hint">Add first day of school photo</div>
+                            </div>
+                        </div>
+                        <p class="handwritten text-center mt-2">First day jitters!</p>
+                    </div>
+                    
+                    <div class="relative">
+                        <div class="photo-frame" style="--rotate: 1deg;">
+                            <div class="washi-tape" style="--tape-color: var(--sage); --tape-rotate: 15deg; top: -8px; right: 20px;"></div>
+                            <div class="photo-placeholder aspect-[4/3] mb-2">
+                                <span>School Performance</span>
+                                <div class="add-photo-hint">Add performance photo</div>
+                            </div>
+                        </div>
+                        <p class="handwritten text-center mt-2">Star of the show!</p>
+                    </div>
+                    
+                    <div class="relative">
+                        <div class="photo-frame" style="--rotate: -2deg;">
+                            <div class="washi-tape" style="--tape-color: var(--dusty-rose); --tape-rotate: 25deg; top: -10px; left: 30px;"></div>
+                            <div class="photo-placeholder aspect-[3/4] mb-2">
+                                <span>Science Fair</span>
+                                <div class="add-photo-hint">Add science fair photo</div>
+                            </div>
+                        </div>
+                        <p class="handwritten text-center mt-2">Science genius!</p>
+                    </div>
+                    
+                    <div class="relative circular-frame">
+                        <div class="photo-frame" style="--rotate: 2deg;">
+                            <div class="washi-tape" style="--tape-color: var(--lavender); --tape-rotate: -15deg; top: -8px; left: 20px;"></div>
+                            <div class="photo-placeholder">
+                                <span>School Friends</span>
+                                <div class="add-photo-hint">Add friends photo</div>
+                            </div>
+                        </div>
+                        <p class="handwritten text-center mt-2">Best buddies!</p>
+                    </div>
+                    
+                    <div class="relative torn-photo">
+                        <div class="photo-frame" style="--rotate: -1deg;">
+                            <div class="washi-tape" style="--tape-color: var(--cream); --tape-rotate: 10deg; top: -8px; right: 15px;"></div>
+                            <div class="photo-placeholder aspect-[4/3]">
+                                <span>Field Trip</span>
+                                <div class="add-photo-hint">Add field trip photo</div>
+                            </div>
+                        </div>
+                        <p class="handwritten text-center mt-2">Adventure time!</p>
+                    </div>
+                    
+                    <div class="relative">
+                        <div class="photo-frame polaroid" style="--rotate: 1deg;">
+                            <div class="washi-tape" style="--tape-color: var(--beige); --tape-rotate: -5deg; top: -8px; right: 25px;"></div>
+                            <div class="photo-placeholder aspect-[4/3] mb-2">
+                                <span>School Award</span>
+                                <div class="add-photo-hint">Add award photo</div>
+                            </div>
+                            <p class="handwritten text-center text-lg">So proud!</p>
+                        </div>
+                    </div>
+                    
+                    <div class="md:col-span-3">
+                        <div class="bg-white p-6 rounded-lg border border-gray-100 shadow-sm">
+                            <p class="serif italic text-lg mb-4">"Education is not the filling of a pail, but the lighting of a fire."</p>
+                            <p class="text-gray-700">Your school years were filled with discovery and growth. From learning to read to solving complex problems, you approached each challenge with determination. Your teachers always noted your creativity and kind heart. These formative years shaped so much of who you've become.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Teenage Years Page -->
+        <section id="teenage" class="album-page hidden flex items-center justify-center">
+            <div class="page-content w-full max-w-4xl mx-auto p-10 rounded-lg" style="background-color: var(--lavender);">
+                <div class="torn-edge"></div>
+                
+                <div class="relative mb-8">
+                    <h2 class="page-title serif text-3xl font-bold text-gray-700">Teenage Years</h2>
+                    <div class="sticker" style="top: -15px; right: 30px; --sticker-rotate: -5deg;">🌟</div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="relative">
+                        <div class="photo-frame polaroid" style="--rotate: 2deg;">
+                            <div class="washi-tape" style="--tape-color: var(--blush); --tape-rotate: -15deg; top: -10px; left: 20px;"></div>
+                            <div class="photo-placeholder aspect-[4/3] mb-2">
+                                <span>High School Friends</span>
+                                <div class="add-photo-hint">Add friends group photo</div>
+                            </div>
+                            <p class="handwritten text-center text-lg">Best friends forever!</p>
+                        </div>
+                    </div>
+                    
+                    <div class="relative">
+                        <div class="photo-frame polaroid" style="--rotate: -3deg;">
+                            <div class="washi-tape" style="--tape-color: var(--sage); --tape-rotate: 20deg; top: -8px; right: 30px;"></div>
+                            <div class="photo-placeholder aspect-[4/3] mb-2">
+                                <span>Prom Night</span>
+                                <div class="add-photo-hint">Add prom photo</div>
+                            </div>
+                            <p class="handwritten text-center text-lg">Unforgettable night!</p>
+                        </div>
+                        <div class="flower" style="bottom: 30px; left: 10px;">
+                            <svg width="30" height="30" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M50 20C55 35 65 40 80 45C65 50 55 55 50 70C45 55 35 50 20 45C35 40 45 35 50 20Z" fill="#d8d0e3"/>
+                                <circle cx="50" cy="45" r="5" fill="#b8a7d0"/>
+                            </svg>
+                        </div>
+                    </div>
+                    
+                    <div class="relative torn-photo">
+                        <div class="photo-frame" style="--rotate: 1deg;">
+                            <div class="washi-tape" style="--tape-color: var(--cream); --tape-rotate: -10deg; top: -8px; left: 25px;"></div>
+                            <div class="photo-placeholder aspect-[3/4]">
+                                <span>Sports Team</span>
+                                <div class="add-photo-hint">Add sports photo</div>
+                            </div>
+                        </div>
+                        <p class="handwritten text-center mt-2">Team spirit!</p>
+                    </div>
+                    
+                    <div class="relative circular-frame">
+                        <div class="photo-frame" style="--rotate: -2deg;">
+                            <div class="washi-tape" style="--tape-color: var(--dusty-rose); --tape-rotate: 15deg; top: -8px; right: 20px;"></div>
+                            <div class="photo-placeholder">
+                                <span>Sweet 16</span>
+                                <div class="add-photo-hint">Add birthday photo</div>
+                            </div>
+                        </div>
+                        <p class="handwritten text-center mt-2">Sweet sixteen!</p>
+                    </div>
+                    
+                    <div class="md:col-span-2">
+                        <div class="bg-white p-6 rounded-lg border border-gray-100 shadow-sm">
+                            <p class="handwritten text-xl mb-3">Remember when...</p>
+                            <p class="text-gray-700">The teenage years brought so many changes and adventures. Finding your voice, discovering your passions, and navigating the ups and downs of growing up. Through it all, your resilience and authenticity shined through. Those late-night talks, music discoveries, and dreams of the future shaped the amazing person you are today.</p>
+                            <div class="flex justify-end mt-4">
+                                <div class="handwritten text-xl">✨</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Early Adulthood Page -->
+        <section id="adulthood" class="album-page hidden flex items-center justify-center">
+            <div class="page-content w-full max-w-4xl mx-auto p-10 rounded-lg" style="background-color: var(--sage);">
+                <div class="torn-edge"></div>
+                
+                <div class="relative mb-8">
+                    <h2 class="page-title serif text-3xl font-bold text-gray-700">Early Adulthood</h2>
+                    <div class="sticker" style="top: -10px; right: 60px; --sticker-rotate: 5deg;">🌱</div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="relative">
+                        <div class="photo-frame" style="--rotate: -2deg;">
+                            <div class="washi-tape" style="--tape-color: var(--dusty-rose); --tape-rotate: -25deg; top: -10px; left: 15px;"></div>
+                            <div class="photo-placeholder aspect-[3/4] mb-2">
+                                <span>College Graduation</span>
+                                <div class="add-photo-hint">Add graduation photo</div>
+                            </div>
+                        </div>
+                        <p class="handwritten text-center mt-2">You did it!</p>
+                    </div>
+                    
+                    <div class="relative">
+                        <div class="photo-frame" style="--rotate: 1deg;">
+                            <div class="washi-tape" style="--tape-color: var(--blush); --tape-rotate: 15deg; top: -8px; right: 20px;"></div>
+                            <div class="photo-placeholder aspect-[4/3] mb-2">
+                                <span>First Apartment</span>
+                                <div class="add-photo-hint">Add apartment photo</div>
+                            </div>
+                        </div>
+                        <p class="handwritten text-center mt-2">Home sweet home!</p>
+                    </div>
+                    
+                    <div class="relative">
+                        <div class="photo-frame" style="--rotate: -1deg;">
+                            <div class="washi-tape" style="--tape-color: var(--lavender); --tape-rotate: 20deg; top: -10px; left: 30px;"></div>
+                            <div class="photo-placeholder aspect-[3/4] mb-2">
+                                <span>Career Milestone</span>
+                                <div class="add-photo-hint">Add career photo</div>
+                            </div>
+                        </div>
+                        <p class="handwritten text-center mt-2">So proud!</p>
+                        <div class="flower" style="bottom: 20px; right: 10px;">
+                            <svg width="30" height="30" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M50 20C55 35 65 40 80 45C65 50 55 55 50 70C45 55 35 50 20 45C35 40 45 35 50 20Z" fill="#c2cfc0"/>
+                                <circle cx="50" cy="45" r="5" fill="#a3b6a0"/>
+                            </svg>
+                        </div>
+                    </div>
+                    
+                    <div class="relative circular-frame">
+                        <div class="photo-frame" style="--rotate: 2deg;">
+                            <div class="washi-tape" style="--tape-color: var(--cream); --tape-rotate: -15deg; top: -8px; left: 20px;"></div>
+                            <div class="photo-placeholder">
+                                <span>Travel Memory</span>
+                                <div class="add-photo-hint">Add travel photo</div>
+                            </div>
+                        </div>
+                        <p class="handwritten text-center mt-2">Adventure time!</p>
+                    </div>
+                    
+                    <div class="relative torn-photo">
+                        <div class="photo-frame" style="--rotate: -2deg;">
+                            <div class="washi-tape" style="--tape-color: var(--blush); --tape-rotate: 10deg; top: -8px; right: 15px;"></div>
+                            <div class="photo-placeholder aspect-[4/3]">
+                                <span>New Friends</span>
+                                <div class="add-photo-hint">Add friends photo</div>
+                            </div>
+                        </div>
+                        <p class="handwritten text-center mt-2">New beginnings!</p>
+                    </div>
+                    
+                    <div class="relative">
+                        <div class="photo-frame polaroid" style="--rotate: 1deg;">
+                            <div class="washi-tape" style="--tape-color: var(--lavender); --tape-rotate: -5deg; top: -8px; right: 25px;"></div>
+                            <div class="photo-placeholder aspect-[4/3] mb-2">
+                                <span>Special Achievement</span>
+                                <div class="add-photo-hint">Add achievement photo</div>
+                            </div>
+                            <p class="handwritten text-center text-lg">Well deserved!</p>
+                        </div>
+                    </div>
+                    
+                    <div class="md:col-span-3">
+                        <div class="bg-white p-6 rounded-lg border border-gray-100 shadow-sm">
+                            <p class="serif italic text-lg mb-4">"Life isn't about finding yourself. Life is about creating yourself."</p>
+                            <p class="text-gray-700">Watching you step into adulthood has been a beautiful journey. You've navigated new challenges with grace and determination, creating a life that reflects your values and dreams. From career milestones to personal growth, you've embraced each opportunity to learn and evolve.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Present Day Page -->
+        <section id="present" class="album-page hidden flex items-center justify-center">
+            <div class="page-content w-full max-w-4xl mx-auto p-10 rounded-lg" style="background-color: var(--dusty-rose);">
+                <div class="torn-edge"></div>
+                
+                <div class="relative mb-8">
+                    <h2 class="page-title serif text-3xl font-bold text-gray-700">Present Day</h2>
+                    <div class="sticker" style="top: -15px; right: 40px; --sticker-rotate: -10deg;">🎂</div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="relative">
+                        <div class="photo-frame polaroid" style="--rotate: -2deg;">
+                            <div class="washi-tape" style="--tape-color: var(--beige); --tape-rotate: -30deg; top: -10px; left: 20px;"></div>
+                            <div class="photo-placeholder aspect-[4/3] mb-2">
+                                <span>Recent Adventure</span>
+                                <div class="add-photo-hint">Add recent photo</div>
+                            </div>
+                            <p class="handwritten text-center text-lg">Living your best life!</p>
+                        </div>
+                        <div class="flower" style="bottom: 20px; right: 10px;">
+                            <svg width="30" height="30" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M50 20C55 35 65 40 80 45C65 50 55 55 50 70C45 55 35 50 20 45C35 40 45 35 50 20Z" fill="#f2d5d5"/>
+                                <circle cx="50" cy="45" r="5" fill="#d9adad"/>
+                            </svg>
+                        </div>
+                    </div>
+                    
+                    <div class="relative">
+                        <div class="photo-frame polaroid" style="--rotate: 3deg;">
+                            <div class="washi-tape" style="--tape-color: var(--sage); --tape-rotate: 20deg; top: -8px; right: 30px;"></div>
+                            <div class="photo-placeholder aspect-[4/3] mb-2">
+                                <span>Birthday Celebration</span>
+                                <div class="add-photo-hint">Add birthday photo</div>
+                            </div>
+                            <p class="handwritten text-center text-lg">Happy Birthday!</p>
+                        </div>
+                    </div>
+                    
+                    <div class="relative circular-frame">
+                        <div class="photo-frame" style="--rotate: -1deg;">
+                            <div class="washi-tape" style="--tape-color: var(--cream); --tape-rotate: 15deg; top: -8px; left: 20px;"></div>
+                            <div class="photo-placeholder">
+                                <span>Current Portrait</span>
+                                <div class="add-photo-hint">Add portrait photo</div>
+                            </div>
+                        </div>
+                        <p class="handwritten text-center mt-2">Beautiful you!</p>
+                    </div>
+                    
+                    <div class="relative torn-photo">
+                        <div class="photo-frame" style="--rotate: 2deg;">
+                            <div class="washi-tape" style="--tape-color: var(--lavender); --tape-rotate: -10deg; top: -8px; right: 15px;"></div>
+                            <div class="photo-placeholder aspect-[3/4]">
+                                <span>Special Moment</span>
+                                <div class="add-photo-hint">Add special moment photo</div>
+                            </div>
+                        </div>
+                        <p class="handwritten text-center mt-2">Cherished memories!</p>
+                    </div>
+                    
+                    <div class="md:col-span-2">
+                        <div class="bg-white p-6 rounded-lg border border-gray-100 shadow-sm">
+                            <p class="handwritten text-xl mb-3">Today and always...</p>
+                            <p class="text-gray-700">Here you are today - accomplished, beautiful inside and out, and still growing. Your journey has been filled with so many precious moments, and there are countless more to come. On your birthday, we celebrate not just another year, but the wonderful person you are and all the lives you've touched.</p>
+                            <div class="flex justify-end mt-4">
+                                <div class="handwritten text-2xl">❤️</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Final Page -->
+        <section id="final" class="album-page hidden flex items-center justify-center">
+            <div class="page-content w-full max-w-4xl mx-auto p-10 rounded-lg bg-cover bg-center" 
+                 style="background-image: linear-gradient(rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.8)), url('data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'400\' height=\'400\' viewBox=\'0 0 800 800\'%3E%3Cg fill=\'none\' stroke=\'%23d8d0e3\' stroke-width=\'1\'%3E%3Cpath d=\'M769 229L1037 260.9M927 880L731 737 520 660 309 538 40 599 295 764 126.5 879.5 40 599-197 493 102 382-31 229 126.5 79.5-69-63\'/%3E%3Cpath d=\'M-31 229L237 261 390 382 603 493 308.5 537.5 101.5 381.5M370 905L295 764\'/%3E%3Cpath d=\'M520 660L578 842 731 737 840 599 603 493 520 660 295 764 309 538 390 382 539 269 769 229 577.5 41.5 370 105 295 -36 126.5 79.5 237 261 102 382 40 599 -69 737 127 880\'/%3E%3Cpath d=\'M520-140L578.5 42.5 731-63M603 493L539 269 237 261 370 105M902 382L539 269M390 382L102 382\'/%3E%3Cpath d=\'M-222 42L126.5 79.5 370 105 539 269 577.5 41.5 927 80 769 229 902 382 603 493 731 737M295-36L577.5 41.5M578 842L295 764M40-201L127 80M102 382L-261 269\'/%3E%3C/g%3E%3Cg fill=\'%23d9adad\'%3E%3Ccircle cx=\'769\' cy=\'229\' r=\'5\'/%3E%3Ccircle cx=\'539\' cy=\'269\' r=\'5\'/%3E%3Ccircle cx=\'603\' cy=\'493\' r=\'5\'/%3E%3Ccircle cx=\'731\' cy=\'737\' r=\'5\'/%3E%3Ccircle cx=\'520\' cy=\'660\' r=\'5\'/%3E%3Ccircle cx=\'309\' cy=\'538\' r=\'5\'/%3E%3Ccircle cx=\'295\' cy=\'764\' r=\'5\'/%3E%3Ccircle cx=\'40\' cy=\'599\' r=\'5\'/%3E%3Ccircle cx=\'102\' cy=\'382\' r=\'5\'/%3E%3Ccircle cx=\'127\' cy=\'80\' r=\'5\'/%3E%3Ccircle cx=\'370\' cy=\'105\' r=\'5\'/%3E%3Ccircle cx=\'578\' cy=\'42\' r=\'5\'/%3E%3Ccircle cx=\'237\' cy=\'261\' r=\'5\'/%3E%3Ccircle cx=\'390\' cy=\'382\' r=\'5\'/%3E%3C/g%3E%3C/svg%3E');">
+                
+                <div class="text-center">
+                    <div class="mb-6">
+                        <svg class="mx-auto mb-4" width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M40 10C23.4315 10 10 23.4315 10 40C10 56.5685 23.4315 70 40 70C56.5685 70 70 56.5685 70 40C70 23.4315 56.5685 10 40 10Z" stroke="#d9adad" stroke-width="2"/>
+                            <path d="M40 15C26.1929 15 15 26.1929 15 40C15 53.8071 26.1929 65 40 65C53.8071 65 65 53.8071 65 40C65 26.1929 53.8071 15 40 15Z" stroke="#c2cfc0" stroke-width="1.5"/>
+                            <path d="M40 20C29.0543 20 20 29.0543 20 40C20 50.9457 29.0543 60 40 60C50.9457 60 60 50.9457 60 40C60 29.0543 50.9457 20 40 20Z" stroke="#d8d0e3" stroke-width="1"/>
+                            <path d="M40 25C31.7157 25 25 31.7157 25 40C25 48.2843 31.7157 55 40 55C48.2843 55 55 48.2843 55 40C55 31.7157 48.2843 25 40 25Z" fill="#f2d5d5" fill-opacity="0.3"/>
+                        </svg>
+                        <h1 class="serif text-4xl md:text-5xl text-gray-700 font-bold">Happy Birthday!</h1>
+                    </div>
+                    <p class="handwritten text-3xl mb-8 text-gray-600">With love on your special day</p>
+                    <div class="max-w-lg mx-auto">
+                        <p class="serif italic text-lg md:text-xl mb-8">"The best is yet to come."</p>
+                        <p class="text-sm md:text-base mb-8">May this new year of your life be filled with joy, love, and beautiful new memories to add to this album.</p>
+                    </div>
+                    
+                    <!-- Final Photo Collage -->
+                    <div class="grid grid-cols-3 gap-4 max-w-lg mx-auto mb-8">
+                        <div class="photo-frame" style="--rotate: -2deg;">
+                            <div class="photo-placeholder aspect-square">
+                                <span>Memory 1</span>
+                                <div class="add-photo-hint">Add photo</div>
+                            </div>
+                        </div>
+                        <div class="photo-frame" style="--rotate: 1deg;">
+                            <div class="photo-placeholder aspect-square">
+                                <span>Memory 2</span>
+                                <div class="add-photo-hint">Add photo</div>
+                            </div>
+                        </div>
+                        <div class="photo-frame" style="--rotate: -1deg;">
+                            <div class="photo-placeholder aspect-square">
+                                <span>Memory 3</span>
+                                <div class="add-photo-hint">Add photo</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-8">
+                        <button id="restart-button" class="px-8 py-3 bg-white border border-gray-300 rounded-md shadow-sm hover:shadow-md transition-all text-gray-700 serif">
+                            Start Over
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Navigation Arrows -->
+        <div id="prev-arrow" class="nav-arrow prev hidden">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+            </svg>
+        </div>
+        <div id="next-arrow" class="nav-arrow next">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+            </svg>
+        </div>
+        
+        <!-- Navigation Text -->
+        <div id="prev-text" class="page-nav-text prev hidden serif">Previous Chapter</div>
+        <div id="next-text" class="page-nav-text next serif">Begin Journey</div>
+
+        <!-- Navigation Dots -->
+        <div class="navigation">
+            <div class="nav-dot active" data-page="cover"></div>
+            <div class="nav-dot" data-page="childhood"></div>
+            <div class="nav-dot" data-page="school"></div>
+            <div class="nav-dot" data-page="teenage"></div>
+            <div class="nav-dot" data-page="adulthood"></div>
+            <div class="nav-dot" data-page="present"></div>
+            <div class="nav-dot" data-page="final"></div>
+        </div>
+        
+        <!-- Page Indicator -->
+        <div id="page-indicator" class="page-indicator serif">Cover</div>
+
+        <!-- Page Turn Overlay -->
+        <div id="page-turn-overlay" class="page-turn-overlay"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const pages = ['cover', 'childhood', 'school', 'teenage', 'adulthood', 'present', 'final'];
+            const pageTitles = ['Cover', 'Childhood Days', 'School Years', 'Teenage Years', 'Early Adulthood', 'Present Day', 'Happy Birthday'];
+            let currentPageIndex = 0;
+            
+            const overlay = document.getElementById('page-turn-overlay');
+            const prevArrow = document.getElementById('prev-arrow');
+            const nextArrow = document.getElementById('next-arrow');
+            const prevText = document.getElementById('prev-text');
+            const nextText = document.getElementById('next-text');
+            const pageIndicator = document.getElementById('page-indicator');
+            
+            function updateNavigation() {
+                // Update arrows visibility
+                if (currentPageIndex === 0) {
+                    prevArrow.classList.add('hidden');
+                    prevText.classList.add('hidden');
+                } else {
+                    prevArrow.classList.remove('hidden');
+                    prevText.classList.remove('hidden');
+                }
+                
+                if (currentPageIndex === pages.length - 1) {
+                    nextArrow.classList.add('hidden');
+                    nextText.classList.add('hidden');
+                } else {
+                    nextArrow.classList.remove('hidden');
+                    nextText.classList.remove('hidden');
+                }
+                
+                // Update navigation text
+                if (currentPageIndex === 0) {
+                    nextText.textContent = 'Begin Journey';
+                } else {
+                    nextText.textContent = 'Next Chapter';
+                }
+                
+                // Update page indicator
+                pageIndicator.textContent = pageTitles[currentPageIndex];
+            }
+            
+            function showPage(index) {
+                // Hide all pages
+                pages.forEach(pageId => {
+                    document.getElementById(pageId).classList.add('hidden');
+                });
+                
+                // Show the selected page
+                document.getElementById(pages[index]).classList.remove('hidden');
+                
+                // Update navigation dots
+                document.querySelectorAll('.nav-dot').forEach((dot, i) => {
+                    if (i === index) {
+                        dot.classList.add('active');
+                    } else {
+                        dot.classList.remove('active');
+                    }
+                });
+                
+                currentPageIndex = index;
+                updateNavigation();
+            }
+            
+            function animatePageTurn(fromIndex, toIndex) {
+                overlay.style.opacity = '1';
+                
+                setTimeout(() => {
+                    showPage(toIndex);
+                    
+                    setTimeout(() => {
+                        overlay.style.opacity = '0';
+                    }, 100);
+                }, 400);
+            }
+            
+            // Navigation dot click handlers
+            document.querySelectorAll('.nav-dot').forEach((dot, index) => {
+                dot.addEventListener('click', () => {
+                    if (index !== currentPageIndex) {
+                        animatePageTurn(currentPageIndex, index);
+                    }
+                });
+            });
+            
+            // Arrow navigation handlers
+            prevArrow.addEventListener('click', () => {
+                if (currentPageIndex > 0) {
+                    animatePageTurn(currentPageIndex, currentPageIndex - 1);
+                }
+            });
+            
+            nextArrow.addEventListener('click', () => {
+                if (currentPageIndex < pages.length - 1) {
+                    animatePageTurn(currentPageIndex, currentPageIndex + 1);
+                }
+            });
+            
+            // Text navigation handlers
+            prevText.addEventListener('click', () => {
+                if (currentPageIndex > 0) {
+                    animatePageTurn(currentPageIndex, currentPageIndex - 1);
+                }
+            });
+            
+            nextText.addEventListener('click', () => {
+                if (currentPageIndex < pages.length - 1) {
+                    animatePageTurn(currentPageIndex, currentPageIndex + 1);
+                }
+            });
+            
+            // Start button click handler
+            document.getElementById('start-button').addEventListener('click', () => {
+                animatePageTurn(0, 1);
+            });
+            
+            // Restart button click handler
+            document.getElementById('restart-button').addEventListener('click', () => {
+                animatePageTurn(6, 0);
+            });
+            
+            // Keyboard navigation
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowRight' && currentPageIndex < pages.length - 1) {
+                    animatePageTurn(currentPageIndex, currentPageIndex + 1);
+                } else if (e.key === 'ArrowLeft' && currentPageIndex > 0) {
+                    animatePageTurn(currentPageIndex, currentPageIndex - 1);
+                }
+            });
+            
+            // Touch swipe navigation
+            let touchStartX = 0;
+            let touchEndX = 0;
+            
+            document.addEventListener('touchstart', (e) => {
+                touchStartX = e.changedTouches[0].screenX;
+            });
+            
+            document.addEventListener('touchend', (e) => {
+                touchEndX = e.changedTouches[0].screenX;
+                handleSwipe();
+            });
+            
+            function handleSwipe() {
+                const swipeThreshold = 50;
+                
+                if (touchEndX < touchStartX - swipeThreshold && currentPageIndex < pages.length - 1) {
+                    // Swipe left - go to next page
+                    animatePageTurn(currentPageIndex, currentPageIndex + 1);
+                }
+                
+                if (touchEndX > touchStartX + swipeThreshold && currentPageIndex > 0) {
+                    // Swipe right - go to previous page
+                    animatePageTurn(currentPageIndex, currentPageIndex - 1);
+                }
+            }
+            
+            // Initialize the first page
+            showPage(0);
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'95ecbaf8f6458352',t:'MTc1MjQ1MTEyNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
+
